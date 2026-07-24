@@ -35,6 +35,9 @@ venv/
 .DS_Store
 .vscode/
 .idea/
-.claude/
 *.log
 .vercel
+
+# local tooling
+/.editor/
+/.agent/

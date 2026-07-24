@@ -1,0 +1,68 @@
+# CoverFlow production-shaped topology.
+#   docker compose -f infra/docker-compose.yml up --build
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-coverflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-coverflow}
+      POSTGRES_DB: ${POSTGRES_DB:-coverflow}
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U coverflow"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+
+  # Google Pub/Sub emulator — same client API as production Pub/Sub
+  pubsub:
+    image: gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators
+    command: gcloud beta emulators pubsub start --host-port=0.0.0.0:8681 --project=coverflow-local
+    ports: ["8681:8681"]
+
+  api:
+    build: { context: .., dockerfile: infra/api.Dockerfile }
+    environment:
+      PORT: 4000
+      JWT_SECRET: ${JWT_SECRET:-change-me}
+      WEB_ORIGIN: http://localhost:3000
+      AI_SERVICE_URL: http://ai:8000
+      REDIS_URL: redis://redis:6379
+      GOOGLE_PUBSUB_EMULATOR_HOST: pubsub:8681
+      GOOGLE_PUBSUB_PROJECT: coverflow-local
+    ports: ["4000:4000"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_started }
+      pubsub: { condition: service_started }
+
+  core:
+    build: { context: ../services/core, dockerfile: ../../infra/core.Dockerfile }
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres:5432/coverflow
+      POSTGRES_USER: ${POSTGRES_USER:-coverflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-coverflow}
+      JWT_SECRET: ${JWT_SECRET:-change-me}
+    ports: ["8080:8080"]
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  ai:
+    build: { context: ../services/ai, dockerfile: ../../infra/ai.Dockerfile }
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    ports: ["8000:8000"]
+
+  web:
+    build: { context: .., dockerfile: infra/web.Dockerfile }
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+    ports: ["3000:3000"]
+    depends_on: [api]
+
+volumes:
+  pgdata:

@@ -1,0 +1,40 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# builds
+.next/
+out/
+dist/
+build/
+target/
+*.tsbuildinfo
+next-env.d.ts
+
+# runtime / local data
+services/api/data/
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+
+# env & secrets
+.env
+.env.*
+!.env.example
+apps/web/.env.local
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# editor / os / tooling
+.DS_Store
+.vscode/
+.idea/
+.claude/
+*.log
+.vercel

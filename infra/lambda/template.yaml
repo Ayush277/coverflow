@@ -1,0 +1,61 @@
+# AWS SAM template — deploys the three background processors.
+#   sam build && sam deploy --guided
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: CoverFlow background processing lambdas
+
+Globals:
+  Function:
+    Runtime: nodejs20.x
+    Timeout: 30
+    MemorySize: 256
+    Environment:
+      Variables:
+        COVERFLOW_API_URL: !Ref ApiUrl
+        COVERFLOW_SERVICE_TOKEN: !Ref ServiceToken
+
+Parameters:
+  ApiUrl:
+    Type: String
+  ServiceToken:
+    Type: String
+    NoEcho: true
+
+Resources:
+  ReceiptParser:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: receipt-parser/
+      Handler: index.handler
+      Events:
+        ReceiptUploaded:
+          Type: S3
+          Properties:
+            Bucket: !Ref ReceiptsBucket
+            Events: s3:ObjectCreated:*
+
+  NotificationScheduler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: notification-scheduler/
+      Handler: index.handler
+      Events:
+        Hourly:
+          Type: Schedule
+          Properties:
+            Schedule: rate(1 hour)
+
+  ClaimPreprocessor:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: claim-preprocessor/
+      Handler: index.handler
+      Events:
+        PubSubPush:
+          Type: Api
+          Properties:
+            Path: /claims-submitted
+            Method: post
+
+  ReceiptsBucket:
+    Type: AWS::S3::Bucket

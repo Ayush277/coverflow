@@ -1,0 +1,32 @@
+# Render blueprint — deploys the CoverFlow API as a persistent web service.
+# Import at https://dashboard.render.com/select-repo (Render auto-detects this file).
+services:
+  - type: web
+    name: coverflow-api
+    runtime: node
+    plan: free
+    region: singapore
+    rootDir: services/api
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 4000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: WEB_ORIGIN
+        sync: false   # set to your Vercel URL, e.g. https://coverflow.vercel.app
+      # Optional — real email delivery (otherwise an Ethereal preview inbox is used):
+      # - key: SMTP_HOST
+      #   sync: false
+      # - key: SMTP_PORT
+      #   value: 587
+      # - key: SMTP_USER
+      #   sync: false
+      # - key: SMTP_PASS
+      #   sync: false
+    disk:
+      name: coverflow-data
+      mountPath: /opt/render/project/src/services/api/data
+      sizeGB: 1

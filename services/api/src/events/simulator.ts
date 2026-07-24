@@ -45,11 +45,16 @@ export function emitMockTransaction(userId?: string) {
 }
 
 let timer: ReturnType<typeof setInterval> | null = null;
-/** Ambient stream: a new transaction lands every 45–90s while the server runs. */
+/**
+ * Ambient stream: a new transaction lands every 45–90s while the server runs.
+ * Scoped to the demo account only — real signups should see nothing on their
+ * dashboard except the purchases they actually make in the store.
+ */
 export function startAmbientStream() {
   if (timer) return;
   const tick = () => {
-    emitMockTransaction();
+    const demo = db.prepare(`SELECT id FROM users WHERE email = 'demo@coverflow.app'`).get() as { id: string } | undefined;
+    if (demo) emitMockTransaction(demo.id);
     clearInterval(timer!);
     timer = setInterval(tick, 45000 + Math.random() * 45000);
   };

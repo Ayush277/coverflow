@@ -21,7 +21,10 @@ registerConsumers();
 startAmbientStream();
 
 const app = express();
-app.use(cors({ origin: config.webOrigin }));
+// Auth is stateless (JWT in the Authorization header, no cookies), so reflecting
+// any origin is safe here and means the web app works no matter what URL Vercel
+// assigns it — one less thing to misconfigure at deploy time.
+app.use(cors({ origin: true }));
 app.use(express.json({ limit: "2mb" }));
 
 app.use((req, _res, next) => { log("http", `${req.method} ${req.path}`); next(); });

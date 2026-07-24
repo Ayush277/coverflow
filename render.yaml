@@ -1,5 +1,10 @@
 # Render blueprint — deploys the CoverFlow API as a persistent web service.
 # Import at https://dashboard.render.com/select-repo (Render auto-detects this file).
+#
+# Note: the free tier has no persistent disk, so the SQLite database lives in the
+# ephemeral filesystem and re-seeds its demo world automatically on every boot —
+# which is exactly what you want for a demo. Upgrade to a paid plan and add a
+# `disk:` mount at services/api/data if you need the data to persist.
 services:
   - type: web
     name: coverflow-api
@@ -26,7 +31,3 @@ services:
       #   sync: false
       # - key: SMTP_PASS
       #   sync: false
-    disk:
-      name: coverflow-data
-      mountPath: /opt/render/project/src/services/api/data
-      sizeGB: 1
